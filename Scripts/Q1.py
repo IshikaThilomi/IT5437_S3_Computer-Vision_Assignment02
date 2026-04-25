@@ -3,9 +3,12 @@ import os
 import matplotlib.pyplot as plt
 
 # --- 1. File Path Handling ---
-# Ensures the script finds lines.csv in the same folder as the script
+# Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, "lines.csv")
+
+# Define the path to the existing results folder as per file structure 
+results_dir = os.path.join(script_dir, "..", "Images", "Results")
 
 def total_least_squares(x, y):
     """Fits a line using Total Least Squares (Orthogonal Regression)"""
@@ -28,7 +31,8 @@ def main():
         return
 
     # --- 2. Load Data ---
-    D = np.genfromtxt(csv_path, delimiter=",", skip_header=1, comments='#')
+    # Using parameters defined in the assignment code snippet [cite: 10, 11, 12]
+    D = np.genfromtxt(csv_path, delimiter=",", skip_header=1)
     
     # --- Question 1(a): TLS on the first line only ---
     x1, y1 = D[:, 0], D[:, 3] 
@@ -40,6 +44,7 @@ def main():
     print(f"Slope-Intercept: y = {(-a1/b1):.4f}x + {(-d1/b1):.4f}\n")
 
     # --- Question 1(b): Sequential RANSAC ---
+    # Flattening data as per assignment hint [cite: 8, 13, 14]
     X_cols = D[:, :3]
     Y_cols = D[:, 3:]
     X_all = X_cols.flatten()
@@ -47,10 +52,10 @@ def main():
     points = np.column_stack((X_all, Y_all))
     
     remaining_points = points.copy()
-    threshold = 0.25  # Distance threshold
+    threshold = 0.25  
     iterations = 2000
     
-    line_results = [] # To store data for plotting
+    line_results = [] 
     
     print("--- Question 1(b) Results (Sequential RANSAC) ---")
     for i in range(3):
@@ -83,26 +88,23 @@ def main():
             c_int = -rd/rb
             print(f"Line {i+1}: y = {m:.4f}x + {c_int:.4f}")
             
-            # Store for plotting
             line_results.append({
                 'points': inlier_pts,
                 'm': m,
                 'c': c_int
             })
             
-            # Masking: Remove these inliers from future iterations
+            # Masking: Remove consensus to find next line [cite: 9]
             remaining_points = remaining_points[~best_inliers_mask]
 
     # --- 3. Plotting the Results ---
     plt.figure(figsize=(10, 7))
-    colors = ['#e41a1c', '#377eb8', '#4daf4a'] # High contrast colors
+    colors = ['#e41a1c', '#377eb8', '#4daf4a'] 
     
     for i, res in enumerate(line_results):
         pts = res['points']
-        # Scatter inliers
         plt.scatter(pts[:, 0], pts[:, 1], color=colors[i], s=12, alpha=0.6, label=f'Line {i+1} Inliers')
         
-        # Draw the fitted line across the full X range
         x_range = np.array([X_all.min(), X_all.max()])
         plt.plot(x_range, res['m']*x_range + res['c'], color=colors[i], linewidth=2.5, linestyle='--')
 
@@ -112,10 +114,12 @@ def main():
     plt.legend()
     plt.grid(True, linestyle=':', alpha=0.5)
     
-    # Save as image for the report
-    output_plot = os.path.join(script_dir, "q1_results_plot.png")
-    plt.savefig(output_plot, dpi=300, bbox_inches='tight')
-    print(f"\nVisual results saved to: {output_plot}")
+    # --- 4. Saving the Results ---
+    output_plot_path = os.path.join(results_dir, "q1_results_plot.png")
+    plt.savefig(output_plot_path, dpi=300, bbox_inches='tight')
+    plt.close() 
+    
+    print(f"\nVisual results saved to: {output_plot_path}")
 
 if __name__ == "__main__":
     main()
